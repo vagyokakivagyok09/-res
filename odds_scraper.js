@@ -7,7 +7,12 @@ async function getBrowser() {
     if (!browser) {
         browser = await puppeteer.launch({
             headless: "new",
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu'
+            ]
         });
     }
     return browser;
@@ -38,12 +43,12 @@ async function scrapeOdds() {
         console.log('Navigating to Tippmix...');
         const targetUrl = 'https://www.tippmix.hu/sportfogadas#?sportid=20&countryid=38014&competitionid=57388&competitiontype=competition&minOdds=1&maxOdds=10';
 
-        await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
         // Wait for match list
         try {
             console.log('Waiting for selectors...');
-            await page.waitForSelector('a span', { timeout: 5000 });
+            await page.waitForSelector('a span', { timeout: 30000 });
         } catch (e) {
             console.log('Timeout waiting for selector (likely no matches).');
             // Don't return yet, let's see if we can find anything or save debug
