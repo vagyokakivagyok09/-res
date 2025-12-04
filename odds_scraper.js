@@ -43,7 +43,7 @@ async function scrapeOdds() {
         // Wait for match list
         try {
             console.log('Waiting for selectors...');
-            await page.waitForSelector('td.title > a', { timeout: 5000 });
+            await page.waitForSelector('a span', { timeout: 5000 });
         } catch (e) {
             console.log('Timeout waiting for selector (likely no matches).');
             // Don't return yet, let's see if we can find anything or save debug
@@ -52,38 +52,42 @@ async function scrapeOdds() {
         console.log('Scraping data...');
         const matches = await page.evaluate(() => {
             const results = [];
-            // Target the link inside the title cell
-            const matchLinks = document.querySelectorAll('td.title > a');
-            console.log(`Found ${matchLinks.length} match links.`);
+            // New selector based on observation: a.ng-scope seems to be the main container for match info
+            // But let's be more generic to be safe. The match rows usually have a specific structure.
+            // Let's try to find rows that contain both names and odds.
 
-            matchLinks.forEach((link, i) => {
+            // It seems matches are often in 'div.event-row' or similar, but based on the subagent report:
+            // The link is 'a.ng-scope'. Let's look for elements that have the player names.
+
+            // Strategy: Find all elements that look like match rows.
+            // Inspecting the "A. Hlawatschke - P. Stehlik" text suggests it's in a span.
+
+            const matchElements = document.querySelectorAll('.event-row, .match-row, div[ng-repeat*="event"]'); // Trying generic classes first, but let's stick to what we saw if possible.
+
+            // Fallback: iterate over all 'a' tags and check content
+            const allLinks = document.querySelectorAll('a');
+
+            allLinks.forEach(link => {
                 try {
-                    // 1. Extract Time
-                    // Structure: span.date
-                    const dateSpan = link.querySelector('span.date');
-                    const time = dateSpan ? dateSpan.textContent.trim() : 'N/A';
+                    const nameSpan = link.querySelector('span.name') || Array.from(link.querySelectorAll('span')).find(s => s.textContent.includes(' - '));
+                    const dateSpan = link.querySelector('span.date') || Array.from(link.querySelectorAll('span')).find(s => s.textContent.match(/\d{2}\.\d{2}\./));
 
-                    // 2. Extract Players
-                    // Structure: span.name
-                    const nameSpan = link.querySelector('span.name');
-                    const nameText = nameSpan ? nameSpan.textContent.trim() : null;
+                    if (nameSpan && dateSpan) {
+                        const nameText = nameSpan.textContent.trim();
+                        const time = dateSpan.textContent.trim();
 
-                    if (nameText && time !== 'N/A') {
                         const [playerA, playerB] = nameText.split(' - ').map(s => s.trim());
 
-                        // 3. Extract Odds
-                        // Navigate up to td.title, then next sibling td.odds
-                        const titleTd = link.closest('td.title');
-                        const oddsTd = titleTd ? titleTd.nextElementSibling : null;
+                        // Odds are usually siblings or children of a parent container
+                        // Let's find the parent row
+                        const parentRow = link.closest('div.event-row') || link.closest('tr') || link.parentElement.parentElement;
 
                         const odds = {};
-
-                        if (oddsTd && oddsTd.classList.contains('odds')) {
-                            const buttons = oddsTd.querySelectorAll('button.btn-odds');
-
-                            buttons.forEach(btn => {
-                                const marketDiv = btn.querySelector('div');
-                                const valueSpan = btn.querySelector('span');
+                        if (parentRow) {
+                            const oddsButtons = parentRow.querySelectorAll('button.btn-odds');
+                            oddsButtons.forEach(btn => {
+                                const marketDiv = btn.querySelector('div.market-name') || btn.querySelector('div');
+                                const valueSpan = btn.querySelector('span.odd-value') || btn.querySelector('span');
 
                                 if (marketDiv && valueSpan) {
                                     const market = marketDiv.textContent.trim();
@@ -93,7 +97,7 @@ async function scrapeOdds() {
                             });
                         }
 
-                        // 4. Filter by Odds (Min 1.6)
+                        // Filter by Odds (Min 1.6)
                         const hasHighOdd = Object.values(odds).some(val => val >= 1.6);
 
                         if (hasHighOdd) {
@@ -110,6 +114,7 @@ async function scrapeOdds() {
                     // console.log('Error parsing match', err);
                 }
             });
+
             return results;
         });
 
