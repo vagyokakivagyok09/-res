@@ -1,0 +1,8 @@
+- [x] **Phase 1: Stats Scraper** (tt.league-pro.com) <!-- id: 5 -->
+    - [x] Analyze page structure <!-- id: 6 -->
+    - [x] Implement `stats_scraper.js` <!-- id: 7 -->
+    - [x] Extract H2H, Form, Rating <!-- id: 8 -->
+- [x] **Phase 2: Enhanced Odds Scraper** (tippmix.hu) <!-- id: 9 -->
+- [x] **Phase 3: The Analyzer** (Value Logic) <!-- id: 10 -->
+- [x] **Phase 4: Web Interface** <!-- id: 11 -->
+- [/] **Phase 5: Deployment** (Render.com) <!-- id: 12 -->
