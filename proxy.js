@@ -12,13 +12,13 @@ app.use(express.static('.')); // Serve static files from current directory
 app.get('/api/matches', async (req, res) => {
     console.log('Received request for matches...');
 
-    // TIME WINDOW CHECK (07:00 - 20:00)
-    const now = new Date();
-    const currentHour = now.getHours();
-    if (currentHour < 7 || currentHour >= 20) {
-        console.log(`Outside active hours (07:00-20:00). Current hour: ${currentHour}`);
-        return res.json({ success: true, matches: [], source: 'off-hours' });
-    }
+    // TIME WINDOW CHECK (DISABLED)
+    // const now = new Date();
+    // const currentHour = now.getHours();
+    // if (currentHour < 7 || currentHour >= 20) {
+    //     console.log(`Outside active hours (07:00-20:00). Current hour: ${currentHour}`);
+    //     return res.json({ success: true, matches: [], source: 'off-hours' });
+    // }
 
     // CACHE CHECK
     const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
